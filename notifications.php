@@ -2,101 +2,118 @@
 session_start();
 
 // Database connection
-$conn = new mysqli("localhost", "root", "", "senior_portal");
-
-// Check connection
+$conn = new mysqli("localhost", "root", "root123", "senior_portal");
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
 // Check login
 if (!isset($_SESSION['user_id'])) {
-    echo "Please login first!";
+    header("Location: login.php");
     exit();
 }
 
 $user_id = $_SESSION['user_id'];
 
-// Fetch notifications
+// Fetch ALL notifications (not just 5)
 $sql = "SELECT * FROM notifications 
-        WHERE user_id = '$user_id' 
+        WHERE user_id='$user_id' 
         ORDER BY created_at DESC";
 
 $result = $conn->query($sql);
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Notifications</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #f4f6f9;
-            padding: 20px;
-        }
-        .container {
-            width: 60%;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-        }
-        .notification {
-            padding: 12px;
-            margin-bottom: 10px;
-            border-left: 5px solid #007bff;
-            background: #f9f9f9;
-            border-radius: 5px;
-        }
-        .unread {
-            border-left-color: red;
-            background: #fff3f3;
-        }
-        .time {
-            font-size: 12px;
-            color: gray;
-        }
-        .status {
-            font-size: 12px;
-            font-weight: bold;
-        }
-        h2 {
-            text-align: center;
-        }
-        .empty {
-            text-align: center;
-            color: gray;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Notifications</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body { background-color:#f8f9fa; }
+
+.card{
+    border-radius:15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+</style>
 </head>
+
 <body>
 
+<!-- Navbar (SAME AS DASHBOARD) -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 <div class="container">
-    <h2>Your Notifications</h2>
+<a class="navbar-brand" href="dashboard.php">Senior Support Portal</a>
 
-    <?php
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
+<button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#menu">
+<span class="navbar-toggler-icon"></span>
+</button>
 
-            $isUnread = ($row['status'] == 'unread') ? 'unread' : '';
+<div class="collapse navbar-collapse" id="menu">
+<ul class="navbar-nav ms-auto">
+<li class="nav-item"><a class="nav-link" href="dashboard.php">Home</a></li>
+<li class="nav-item"><a class="nav-link" href="request_service.php">Services</a></li>
+<li class="nav-item"><a class="nav-link" href="medical_help.php">Medical Help</a></li>
+<li class="nav-item"><a class="nav-link" href="track_request.php">Track Request</a></li>
+<li class="nav-item"><a class="nav-link active" href="notifications.php">Notifications</a></li>
+<li class="nav-item"><a class="nav-link" href="logout.php">Logout</a></li>
+</ul>
+</div>
+</div>
+</nav>
 
-            echo "<div class='notification $isUnread'>";
-            echo "<p>" . htmlspecialchars($row['message']) . "</p>";
-            echo "<div class='status'>Status: " . $row['status'] . "</div>";
-            echo "<div class='time'>" . $row['created_at'] . "</div>";
-            echo "</div>";
-        }
-    } else {
-        echo "<p class='empty'>No notifications yet.</p>";
+<!-- Main Content -->
+<div class="container mt-5">
+
+<h2 class="text-center mb-4">Your Notifications</h2>
+
+<div class="card p-4">
+
+<?php
+if ($result->num_rows > 0) {
+
+    echo "<table class='table table-bordered table-hover'>";
+    echo "<thead class='table-light'>
+            <tr>
+                <th>Message</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+          </thead><tbody>";
+
+    while ($row = $result->fetch_assoc()) {
+
+        // Status colors
+        $statusColor = "";
+        if ($row['status'] == "Pending") $statusColor = "text-warning";
+        elseif ($row['status'] == "Approved") $statusColor = "text-success";
+        elseif ($row['status'] == "Completed") $statusColor = "text-primary";
+        elseif ($row['status'] == "unread") $statusColor = "text-danger";
+
+        echo "<tr>
+                <td>" . htmlspecialchars($row['message']) . "</td>
+                <td class='$statusColor fw-bold'>" . $row['status'] . "</td>
+                <td>" . $row['created_at'] . "</td>
+              </tr>";
     }
-    ?>
+
+    echo "</tbody></table>";
+
+} else {
+    echo "<p class='text-center'>No notifications yet.</p>";
+}
+?>
 
 </div>
 
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
-
-<?php
-$conn->close();
-?>

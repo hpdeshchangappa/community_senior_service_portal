@@ -21,7 +21,7 @@ if(isset($_POST['login'])){
         $_SESSION['admin'] = $row['username'];
         $_SESSION['admin_id'] = $row['admin_id'];
 
-        header("Location: admin_dashboard.php");
+        header("Location: admin_public_dashboard.php");
         exit();
     } else {
         $error = "Invalid email or password!";

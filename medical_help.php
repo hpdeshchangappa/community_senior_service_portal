@@ -20,37 +20,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $symptoms = $conn->real_escape_string($_POST['symptoms']);
     $severity = $_POST['severity'];
 
-    // Convert severity → priority score
+    // 🔥 Convert severity → ML score
     if ($severity == "High") {
-        $priority = 3;
+        $priority_score = 3;
     } elseif ($severity == "Medium") {
-        $priority = 2;
+        $priority_score = 2;
     } else {
-        $priority = 1;
+        $priority_score = 1;
     }
 
-    // Insert into requests table
-    $sql1 = "INSERT INTO requests (user_id, request_type, description, status, created_at)
-             VALUES ('$user_id', 'Medical', '$symptoms', 'Pending', NOW())";
+    // ✅ FIXED: include priority_level
+    $sql1 = "INSERT INTO requests 
+    (user_id, request_type, description, priority_level, status, created_at)
+    VALUES 
+    ('$user_id', 'Medical', '$symptoms', '$severity', 'Pending', NOW())";
 
     if ($conn->query($sql1) === TRUE) {
 
         $request_id = $conn->insert_id;
 
-        // Insert into medical_requests table
-        $sql2 = "INSERT INTO medical_requests (request_id, symptoms, priority_score, doctor_assigned)
-                 VALUES ('$request_id', '$symptoms', '$priority', NULL)";
+        // ✅ FIXED: doctor_assigned = 'Not Assigned'
+        $sql2 = "INSERT INTO medical_requests 
+        (request_id, symptoms, priority_score, doctor_assigned)
+        VALUES 
+        ('$request_id', '$symptoms', '$priority_score', 'Not Assigned')";
 
         if ($conn->query($sql2) === TRUE) {
 
-            // 🔔 INSERT NOTIFICATION
+            // 🔔 Notification
             $message = "Your medical request has been submitted successfully";
-            $status = "Pending";
 
-            $notif_sql = "INSERT INTO notifications (user_id, message, status, created_at)
-                          VALUES ('$user_id', '$message', '$status', NOW())";
-
-            $conn->query($notif_sql);
+            $conn->query("INSERT INTO notifications (user_id, message, status, created_at)
+                          VALUES ('$user_id', '$message', 'unread', NOW())");
 
             $success_msg = "Medical request submitted successfully!";
         } else {
@@ -88,7 +89,7 @@ body { background-color:#f4f6f9; }
 
 <body>
 
-<!-- ✅ NAVBAR (UPDATED) -->
+<!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 <div class="container">
 <a class="navbar-brand" href="dashboard.php">Senior Support Portal</a>
@@ -115,7 +116,7 @@ body { background-color:#f4f6f9; }
 <h2 class="text-center mb-3">Medical Assistance</h2>
 <h5 class="text-center mb-4">Welcome, <?= $_SESSION['name'] ?></h5>
 
-<!-- Messages -->
+<!-- SUCCESS / ERROR -->
 <?php if (isset($success_msg)) { ?>
 <div class="alert alert-success"><?= $success_msg ?></div>
 <?php } ?>
@@ -124,7 +125,7 @@ body { background-color:#f4f6f9; }
 <div class="alert alert-danger"><?= $error_msg ?></div>
 <?php } ?>
 
-<!-- Info -->
+<!-- INFO -->
 <div class="card p-4 mb-4">
 <p>
 This system allows senior citizens to request medical assistance easily. 
@@ -133,22 +134,20 @@ while final decisions are taken by a department officer.
 </p>
 </div>
 
-<!-- Form -->
+<!-- FORM -->
 <div class="card p-4">
 <h5 class="mb-3">Submit Medical Request</h5>
 
 <form method="POST">
 
-<!-- Voice-enabled textarea -->
+<!-- Symptoms -->
 <div class="mb-3">
 <label class="form-label">Symptoms / Issue</label>
 
 <div class="input-group">
 <textarea id="symptoms" name="symptoms" class="form-control" rows="3" required></textarea>
 
-<button type="button" class="btn btn-secondary mic-btn" onclick="startVoice()">
-🎤
-</button>
+<button type="button" class="btn btn-secondary mic-btn" onclick="startVoice()">🎤</button>
 </div>
 
 <small class="text-muted">Click the mic and speak your symptoms</small>
@@ -173,7 +172,7 @@ Submit Request
 
 </div>
 
-<!-- Voice Script -->
+<!-- VOICE SCRIPT -->
 <script>
 function startVoice() {
 
